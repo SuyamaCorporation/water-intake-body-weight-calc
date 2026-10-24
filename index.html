@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Water Intake Body Weight Calculator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .ring-bg { stroke: #e5e7eb; }
+  .ring-fill { stroke: #3b82f6; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+</style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-cyan-50 min-h-screen">
+<div class="max-w-2xl mx-auto p-4">
+  <header class="mb-6 text-center">
+    <h1 class="text-2xl font-bold text-blue-800">💧 Daily Water Intake Calculator</h1>
+    <p class="text-gray-500 text-sm mt-1">Personalized hydration based on your body & lifestyle</p>
+  </header>
+
+  <!-- Settings -->
+  <div class="bg-white rounded-xl shadow p-5 mb-5">
+    <h2 class="font-semibold text-gray-700 mb-4">Your Profile</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Body Weight</label>
+        <div class="flex gap-2">
+          <input id="weight" type="number" min="1" max="500" placeholder="70"
+            class="flex-1 border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            aria-label="Body weight value">
+          <select id="unit" class="border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400" aria-label="Weight unit">
+            <option value="kg">kg</option>
+            <option value="lb">lb</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1" for="activity">Activity Level</label>
+        <select id="activity" class="w-full border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="1.0">Sedentary (desk job, no exercise)</option>
+          <option value="1.2">Moderate (light exercise 1-3x/week)</option>
+          <option value="1.5" selected>Active (exercise 4-5x/week)</option>
+          <option value="1.8">Athlete (intense daily training)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1" for="climate">Climate</label>
+        <select id="climate" class="w-full border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="1.0" selected>Temperate</option>
+          <option value="1.15">Hot / Humid</option>
+        </select>
+      </div>
+      <div class="flex items-end">
+        <button onclick="calculate()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition">Calculate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recommendation -->
+  <div id="recommendation" class="hidden">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+      <div class="bg-blue-600 text-white rounded-xl p-4 text-center col-span-2 sm:col-span-1">
+        <div class="text-3xl font-bold" id="recMl">—</div>
+        <div class="text-blue-100 text-xs mt-1">ml / day</div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 text-center">
+        <div class="text-2xl font-bold text-blue-700" id="recCups">—</div>
+        <div class="text-gray-400 text-xs mt-1">8 oz cups</div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 text-center">
+        <div class="text-2xl font-bold text-blue-700" id="recLiters">—</div>
+        <div class="text-gray-400 text-xs mt-1">liters</div>
+      </div>
+    </div>
+
+    <!-- Progress Ring + Log -->
+    <div class="bg-white rounded-xl shadow p-5 mb-5">
+      <div class="flex flex-col sm:flex-row gap-6 items-center">
+        <!-- Ring -->
+        <div class="flex flex-col items-center">
+          <svg width="160" height="160" role="img" aria-label="Hydration progress ring">
+            <circle class="ring-bg" cx="80" cy="80" r="65" fill="none" stroke-width="12"/>
+            <circle id="ringFill" class="ring-fill" cx="80" cy="80" r="65" fill="none" stroke-width="12"
+              stroke-dasharray="408.41" stroke-dashoffset="408.41" transform="rotate(-90 80 80)"/>
+          </svg>
+          <div class="text-center -mt-24">
+            <div class="text-3xl font-bold text-blue-700" id="pctText">0%</div>
+            <div class="text-xs text-gray-400">of daily goal</div>
+          </div>
+          <div class="mt-16 text-sm text-gray-600"><span id="intakeDisplay">0</span> / <span id="goalDisplay">—</span> ml</div>
+        </div>
+
+        <!-- Add Intake -->
+        <div class="flex-1 w-full">
+          <h3 class="font-semibold text-gray-700 mb-3">Log Intake</h3>
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <button onclick="addMl(250)" class="bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg py-3 font-medium transition" aria-label="Add 250ml">+ 250 ml</button>
+            <button onclick="addMl(350)" class="bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg py-3 font-medium transition" aria-label="Add 350ml">+ 350 ml</button>
+            <button onclick="addMl(500)" class="bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg py-3 font-medium transition" aria-label="Add 500ml">+ 500 ml (bottle)</button>
+            <button onclick="addMl(240)" class="bg-cyan-50 hover:bg-cyan-100 text-cyan-700 rounded-lg py-3 font-medium transition" aria-label="Add one 8oz cup">+ 1 cup (240 ml)</button>
+          </div>
+          <div class="flex gap-2">
+            <input id="customMl" type="number" min="1" max="5000" placeholder="Custom ml"
+              class="flex-1 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              aria-label="Custom amount in ml">
+            <button onclick="addCustom()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 rounded-lg font-medium text-sm transition">Add</button>
+          </div>
+          <button onclick="resetDay()" class="mt-3 text-xs text-red-400 hover:text-red-600">Reset today's log</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="bg-white rounded-xl shadow p-4">
+      <h3 class="text-sm font-semibold text-gray-700 mb-2">Today's Log</h3>
+      <div id="logEntries" class="text-sm text-gray-600 max-h-40 overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <div id="noCalc" class="text-center text-gray-400 mt-8 text-sm">Enter your weight and click Calculate to get started.</div>
+</div>
+
+<script>
+const INTAKE_KEY = 'water_intake_v2';
+
+function getToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+function getIntakeData() {
+  try {
+    const data = JSON.parse(localStorage.getItem(INTAKE_KEY)) || {};
+    if (data.date !== getToday()) return { date: getToday(), entries: [], target: 0 };
+    return data;
+  } catch { return { date: getToday(), entries: [], target: 0 }; }
+}
+function saveIntakeData(d) { localStorage.setItem(INTAKE_KEY, JSON.stringify(d)); }
+
+let targetMl = 0;
+
+function calculate() {
+  const weight = parseFloat(document.getElementById('weight').value);
+  const unit = document.getElementById('unit').value;
+  const activity = parseFloat(document.getElementById('activity').value);
+  const climate = parseFloat(document.getElementById('climate').value);
+
+  if (!weight || weight <= 0) { alert('Please enter a valid weight.'); return; }
+
+  const weightKg = unit === 'lb' ? weight * 0.453592 : weight;
+  const base = weightKg * 33; // 33ml per kg baseline
+  targetMl = Math.round(base * activity * climate);
+
+  document.getElementById('recMl').textContent = targetMl.toLocaleString();
+  document.getElementById('recCups').textContent = (targetMl / 240).toFixed(1);
+  document.getElementById('recLiters').textContent = (targetMl / 1000).toFixed(2);
+  document.getElementById('goalDisplay').textContent = targetMl.toLocaleString();
+
+  const data = getIntakeData();
+  data.target = targetMl;
+  saveIntakeData(data);
+
+  document.getElementById('recommendation').classList.remove('hidden');
+  document.getElementById('noCalc').classList.add('hidden');
+  renderIntake();
+}
+
+function addMl(ml) {
+  if (targetMl === 0) { alert('Calculate your target first.'); return; }
+  const data = getIntakeData();
+  data.entries.push({ ml, time: new Date().toLocaleTimeString() });
+  data.target = targetMl;
+  saveIntakeData(data);
+  renderIntake();
+}
+
+function addCustom() {
+  const val = parseInt(document.getElementById('customMl').value);
+  if (!val || val <= 0) return;
+  document.getElementById('customMl').value = '';
+  addMl(val);
+}
+
+function resetDay() {
+  if (!confirm('Reset today\'s intake log?')) return;
+  const data = { date: getToday(), entries: [], target: targetMl };
+  saveIntakeData(data);
+  renderIntake();
+}
+
+function renderIntake() {
+  const data = getIntakeData();
+  const total = data.entries.reduce((s, e) => s + e.ml, 0);
+  const target = targetMl || data.target || 1;
+  const pct = Math.min(Math.round(total / target * 100), 100);
+  const circum = 408.41;
+  const offset = circum - (circum * pct / 100);
+
+  document.getElementById('ringFill').setAttribute('stroke-dashoffset', offset);
+  document.getElementById('pctText').textContent = `${pct}%`;
+  document.getElementById('intakeDisplay').textContent = total.toLocaleString();
+
+  // Color ring
+  const color = pct >= 100 ? '#22c55e' : pct >= 60 ? '#3b82f6' : '#f59e0b';
+  document.getElementById('ringFill').style.stroke = color;
+
+  const logEl = document.getElementById('logEntries');
+  if (!data.entries.length) {
+    logEl.innerHTML = '<div class="text-gray-400">No entries yet today.</div>';
+    return;
+  }
+  logEl.innerHTML = [...data.entries].reverse().map((e, i) =>
+    `<div class="flex justify-between py-1 border-b border-gray-50">
+      <span class="text-blue-600 font-medium">+ ${e.ml} ml</span>
+      <span class="text-gray-400 text-xs">${e.time}</span>
+    </div>`
+  ).join('');
+}
+
+// Auto-restore if data exists
+const saved = getIntakeData();
+if (saved.target > 0) {
+  targetMl = saved.target;
+  document.getElementById('recommendation').classList.remove('hidden');
+  document.getElementById('noCalc').classList.add('hidden');
+  document.getElementById('goalDisplay').textContent = targetMl.toLocaleString();
+  document.getElementById('recMl').textContent = targetMl.toLocaleString();
+  document.getElementById('recCups').textContent = (targetMl / 240).toFixed(1);
+  document.getElementById('recLiters').textContent = (targetMl / 1000).toFixed(2);
+  renderIntake();
+}
+</script>
+</body>
+</html>
